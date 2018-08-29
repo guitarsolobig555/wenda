@@ -1,0 +1,33 @@
+package com.liu.dao;
+
+import com.liu.model.Message;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
+
+@Mapper
+public interface MessageDAO
+{
+    String TABLE_NAME="message";
+    String INSERT_FIELDS="from_id,to_id,content,created_date,has_read,conversation_id";
+    String SELECT_FIELDS="id,"+INSERT_FIELDS;
+    @Insert({"insert into",TABLE_NAME,"(",INSERT_FIELDS,")values(#{fromId},#{toId},#{content},#{createdDate},#{hasRead},#{conversationId})"})
+    int addMessage(Message message);
+
+    @Select({"select",SELECT_FIELDS,"from",TABLE_NAME,"where conversation_id=#{conversationId} order by created_date desc limit #{offset},#{limit}"})
+     List<Message> messagedetail(@Param("conversationId") String conversationId,
+                                       @Param("offset") int offset,
+                                       @Param("limit") int limit);
+
+    @Select({"select count(id) from ", TABLE_NAME, " where has_read=0 and to_id=#{userId} and conversation_id=#{conversationId}"})
+    int getConvesationUnreadCount(@Param("userId") int userId, @Param("conversationId") String conversationId);
+
+    @Select({"select count(id) as id, ",INSERT_FIELDS,"from (select * from message where from_id=#{userId} or to_id=#{userId} order by id desc) t group by conversation_id order by created_date desc"})
+    List<Message> messagelist(@Param("userId") int userId);
+
+    @Select({"select count(*) from",TABLE_NAME,"where conversation_id=#{conversationId}"})
+    int allcount(@Param("conversationId") String conversationId);
+
+    @Update({"update",TABLE_NAME,"set has_read=1 where id=#{id}"})
+    int updateHasread(@Param("id") int id);
+}
